@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!--
+  index.html — Knotlight entry point
+  Quietloom · 2025
+
+  Opens directly in any up-to-date web browser.
+  No build step, no server, no account required.
+  All game logic and level data are loaded from the
+  sibling JS files listed at the bottom of <body>.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!--
+    user-scalable=no prevents pinch-zoom from interfering with
+    the thread-drawing gesture on touch screens.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1,
+        maximum-scale=1, user-scalable=no">
+  <title>Knotlight — Quietloom</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ── Splash screen ────────────────────────────────────────── -->
+  <!--
+    Shown on first load for ~2.4 s, then faded out and removed
+    from the DOM. The four coloured dots use inline background
+    colours from the brief palette so no extra CSS class is needed.
+  -->
+  <div id="splash">
+    <div class="sp-word">Knotlight</div>
+    <div class="sp-by">by Quietloom</div>
+    <div class="sp-dots">
+      <div class="sp-dot" style="background:#C8443B"></div><!-- Ruby  -->
+      <div class="sp-dot" style="background:#E0922F"></div><!-- Amber -->
+      <div class="sp-dot" style="background:#5FA052"></div><!-- Leaf  -->
+      <div class="sp-dot" style="background:#2F9C95"></div><!-- Teal  -->
+    </div>
+  </div>
+
+  <!-- ── App shell ─────────────────────────────────────────────── -->
+  <div id="app">
+    <div id="shell">
+
+      <!-- ── Level picker screen ─────────────────────────────── -->
+      <!--
+        Lists all 15 available levels as tappable cards.
+        Cards are generated from LEVELS data by renderPicker()
+        in script.js so this element starts empty.
+      -->
+      <section id="sc-pick" class="screen active">
+        <div class="topbar">
+          <span class="wordmark">Knotlight</span>
+          <button class="icon-btn" id="btn-set" aria-label="Settings">
+            <!-- Settings gear icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="12" cy="12" r="3.2"/>
+              <path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83
+                       l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V19.5
+                       a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34
+                       l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87
+                       1.7 1.7 0 0 0-1.56-1.03H4.5a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0
+                       1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83
+                       l.06.06a1.7 1.7 0 0 0 1.87.34h.06A1.7 1.7 0 0 0 11.6 2.6V2.5
+                       a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56h.06a1.7 1.7 0 0 0
+                       1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0
+                       -.34 1.87v.06c.27.62.85 1.05 1.55 1.06h.1a2 2 0 1 1 0 4h-.1
+                       a1.7 1.7 0 0 0-1.56 1.03Z"/>
+            </svg>
+          </button>
+        </div>
+        <div id="picker-grid"></div>
+      </section>
+
+      <!-- ── Game screen ──────────────────────────────────────── -->
+      <section id="sc-game" class="screen">
+
+        <!-- Header: back button · move/par HUD · colourblind toggle -->
+        <div class="ghdr">
+          <button class="icon-btn" id="btn-back" aria-label="Back to levels">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M15 5l-7 7 7 7"/>
+            </svg>
+          </button>
+
+          <div class="hud">
+            <div class="hstat">
+              <span class="v" id="hmv">0</span>
+              <span class="l">Moves</span>
+            </div>
+            <div class="hstat">
+              <span class="v" id="hpar">0</span>
+              <span class="l">Par</span>
+            </div>
+          </div>
+
+          <!-- Colourblind mode toggle — eye icon, amber when active -->
+          <button class="icon-btn" id="btn-cb-toggle" aria-label="Colourblind mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!--
+          Canvas receives pointer events for thread drawing.
+          Sized dynamically by sizeCv() in script.js each time
+          a level opens or the window resizes.
+        -->
+        <div class="board-wrap">
+          <canvas id="board-canvas"></canvas>
+        </div>
+
+        <!-- Footer: clear last thread · reset board · hint -->
+        <div class="gfoot">
+          <div class="abtn" id="btn-clear">Clear Thread</div>
+          <div class="abtn" id="btn-reset">Reset Board</div>
+          <div class="abtn pri" id="btn-hint">Hint</div>
+        </div>
+
+      </section>
+
+      <!-- ── Win overlay ──────────────────────────────────────── -->
+      <!--
+        Slides up from the bottom when all pairs are connected.
+        Content is populated by checkWin() before the overlay is
+        shown, so the DOM values are always fresh.
+      -->
+      <div class="overlay" id="ov-win">
+        <div class="win-card" id="win-card">
+
+          <!-- Star rating: 1–3 stars set by showStars() in script.js -->
+          <div class="win-stars">
+            <span class="star" id="s1">★</span>
+            <span class="star" id="s2">★</span>
+            <span class="star" id="s3">★</span>
+          </div>
+
+          <div class="win-heading" id="wheading">Level Complete</div>
+          <div class="win-sub"     id="wsub">All lights connected</div>
+
+          <!-- Moves achieved · par target · personal best -->
+          <div class="win-stats">
+            <div class="wstat"><span class="wv" id="wmv">0</span><span class="wl">Moves</span></div>
+            <div class="wstat"><span class="wv" id="wpar">0</span><span class="wl">Par</span></div>
+            <div class="wstat hi"><span class="wv" id="wbest">—</span><span class="wl">Best</span></div>
+          </div>
+
+          <!-- Replay and Next Level as icon buttons -->
+          <div class="win-icon-row">
+            <div class="wibtn" id="btn-wreplay">
+              <!-- Circular replay arrow -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              <span class="wibtn-label">Replay</span>
+            </div>
+            <div class="wibtn next-btn" id="btn-wnext">
+              <!-- Right arrow for next level -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              <span class="wibtn-label">Next Level</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Settings overlay ─────────────────────────────────── -->
+      <div class="overlay" id="ov-set">
+        <div class="scard">
+          <div class="stitle">Settings</div>
+          <div class="srule"></div>
+
+          <!-- Sound on / off toggle -->
+          <div class="srow">
+            <div><div class="slabel">Sound</div></div>
+            <div class="sw" id="sw-snd"><div class="k"></div></div>
+          </div>
+
+          <!-- Danger zone — clears all localStorage progress -->
+          <button class="sreset" id="btn-rp">⚠ Reset all saved progress</button>
+          <button class="sclose" id="btn-sclose">Close</button>
+        </div>
+      </div>
+
+    </div><!-- /shell -->
+  </div><!-- /app -->
+
+  <!--
+    Load order matters:
+    1. levels.js   — defines the LEVELS constant used by script.js
+    2. script.js   — game engine, reads LEVELS on initialisation
+  -->
+  <script src="levels.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>

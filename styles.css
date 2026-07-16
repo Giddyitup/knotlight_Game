@@ -1,0 +1,554 @@
+/*
+ * styles.css — Knotlight visual design
+ * Quietloom · 2025
+ *
+ * Design direction: soft, warm, unhurried — a puzzle you pick up
+ * for a calm half hour. Dark Night Board base, cream text, amber
+ * accents for completion states. Serif display face (system stack,
+ * no external load) for the wordmark and stat numerals; sans for
+ * labels and body copy.
+ *
+ * All sizes use clamp() so the layout scales continuously from
+ * 320 px phones through full laptop viewports without breakpoint
+ * jumps. The one layout breakpoint (900 px) centres the shell on
+ * wide screens — everything inside it stays fluid.
+ */
+
+/* ── Design tokens ────────────────────────────────────────────── */
+:root {
+  /* Board colours — fixed by the Quietloom brief */
+  --board:      #20242B;   /* Night Board — grid background         */
+  --gridline:   #39404B;   /* Grid Line — cell dividers             */
+
+  /* UI surface scale — three levels of elevation */
+  --panel:      #262B33;   /* base card/button surface              */
+  --panel-hi:   #2D333D;   /* raised surface (overlays, win card)   */
+
+  /* Text */
+  --cream:      #EDE6DA;   /* primary text                          */
+  --cream2:     #B7AFA0;   /* secondary / label text               */
+  --muted:      #6E7A8A;   /* placeholder / hint text              */
+
+  /* Accent — amber for perfect solves, completed states, CTAs */
+  --amber:      #E0922F;
+  --amber2:     #946227;   /* darker for borders                   */
+  --amber-glow: rgba(224,146,47,.15);
+
+  /* Dividers — hairline rules that don't compete with content */
+  --rule: rgba(237,230,218,.11);
+
+  /* Typography stacks — no external font files; fully offline */
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:  -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* suppress iOS tap flash */
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--board);
+  color: var(--cream);
+  font-family: var(--sans);
+  overscroll-behavior: none; /* prevent pull-to-refresh interfering with the board */
+}
+
+body {
+  display: flex;
+  justify-content: center;
+}
+
+/* ── App shell ────────────────────────────────────────────────── */
+
+/*
+ * #app is fixed to the viewport so the shell always fills the
+ * screen regardless of keyboard or address-bar height changes.
+ */
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+}
+
+/*
+ * #shell is the scrollable column that holds all screens.
+ * max-width caps the layout on wide viewports; on desktop a subtle
+ * border separates it from the matching body background.
+ */
+#shell {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Desktop — centre the shell, add hairline border for definition */
+@media (min-width: 900px) {
+  #shell { max-width: 520px; }
+}
+
+/* ── Screen system ────────────────────────────────────────────── */
+
+/*
+ * All three screens (picker, game) stack on top of each other
+ * inside the shell. Only the one with .active is displayed.
+ */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+/* ── Splash screen ────────────────────────────────────────────── */
+
+/*
+ * Full-viewport cover that fades and scales out after 2.4 s.
+ * Removed from the DOM entirely once the animation completes
+ * (handled in script.js) to avoid blocking pointer events.
+ */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--board);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: splashOut .5s ease-in 2.4s both;
+  pointer-events: none;
+}
+@keyframes splashOut {
+  to { opacity: 0; transform: scale(1.03); }
+}
+
+.sp-word {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(42px, 12vw, 72px);
+  letter-spacing: .03em;
+  animation: fadeUp .7s .2s both;
+}
+.sp-by {
+  font-size: clamp(11px, 2.5vw, 14px);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 8px;
+  animation: fadeUp .7s .45s both;
+}
+.sp-dots {
+  display: flex;
+  gap: clamp(10px, 2.5vw, 16px);
+  margin-top: clamp(28px, 6vw, 48px);
+  animation: fadeUp .7s .65s both;
+}
+.sp-dot {
+  width: clamp(12px, 3vw, 18px);
+  height: clamp(12px, 3vw, 18px);
+  border-radius: 50%;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.sp-dot:nth-child(2) { animation-delay: .18s; }
+.sp-dot:nth-child(3) { animation-delay: .36s; }
+.sp-dot:nth-child(4) { animation-delay: .54s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pulse {
+  0%,100% { transform: scale(.85); opacity: .6; }
+  50%      { transform: scale(1.1); opacity: 1;  }
+}
+
+/* ── Shared chrome ────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(14px,3.5vh,22px) clamp(16px,4vw,24px) clamp(10px,2.5vh,16px);
+  flex-shrink: 0;
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(20px, 5vw, 26px);
+  letter-spacing: .04em;
+}
+
+/* Circular icon buttons used for back, settings, colourblind toggle */
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--cream2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  flex-shrink: 0;
+}
+.icon-btn:hover { color: var(--cream); border-color: rgba(237,230,218,.3); }
+.icon-btn svg   { width: 17px; height: 17px; }
+
+/* Amber highlight for toggle buttons in their active state */
+.icon-btn.active {
+  color: var(--amber);
+  border-color: var(--amber2);
+  background: var(--amber-glow);
+}
+
+/* ── Level picker ─────────────────────────────────────────────── */
+
+/*
+ * Responsive grid — starts at 3 columns on the narrowest phones,
+ * increases as horizontal space allows.
+ */
+#picker-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px clamp(14px,4vw,22px) 32px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(8px, 2vw, 13px);
+  align-content: start;
+}
+@media (min-width: 380px) { #picker-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 460px) { #picker-grid { grid-template-columns: repeat(5, 1fr); } }
+
+/* Individual level card */
+.lcard {
+  position: relative;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: clamp(10px,2.5vw,14px) 8px clamp(8px,2vw,12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s, background .15s;
+}
+.lcard:not(.done):hover { border-color: rgba(224,146,47,.4); background: var(--panel-hi); }
+.lcard:active           { transform: scale(.96); }
+
+.lcard .num {
+  font-family: var(--serif);
+  font-size: clamp(20px, 5vw, 27px);
+  color: var(--cream);
+  line-height: 1;
+}
+.lcard .meta {
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: var(--muted);
+  letter-spacing: .03em;
+}
+
+/* Completed state — amber tint and glowing numeral */
+.lcard.done { border-color: rgba(224,146,47,.55); background: rgba(224,146,47,.07); }
+.lcard.done .num { color: var(--amber); text-shadow: 0 0 12px rgba(224,146,47,.4); }
+
+.lcard .bmv   { font-size: clamp(9px,2.2vw,11px); color: var(--amber); }
+.lcard .stars { font-size: 10px; letter-spacing: 1px; color: var(--amber); }
+
+/* ── Game screen header ───────────────────────────────────────── */
+
+.ghdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(10px,2.5vh,14px) clamp(12px,3.5vw,18px) clamp(6px,1.5vh,10px);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+/* Move counter and par displayed as two stat columns */
+.hud { display: flex; gap: clamp(12px,3vw,20px); align-items: baseline; flex-shrink: 0; }
+.hstat { text-align: center; }
+.hstat .v {
+  font-family: var(--serif);
+  font-size: clamp(17px, 4.5vw, 22px);
+  color: var(--cream);
+  display: block;
+}
+.hstat .l {
+  font-size: clamp(7.5px, 1.8vw, 9.5px);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Board canvas ─────────────────────────────────────────────── */
+
+.board-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px clamp(8px, 3vw, 16px);
+  min-height: 0; /* allow flexbox to shrink below content height */
+}
+
+/*
+ * touch-action: none prevents the browser from claiming scroll
+ * gestures over the canvas, keeping all pointer events in JS.
+ */
+#board-canvas {
+  touch-action: none;
+  border-radius: 7px;
+  display: block;
+}
+
+/* ── Game footer controls ─────────────────────────────────────── */
+
+.gfoot {
+  display: flex;
+  gap: clamp(6px, 2vw, 10px);
+  padding: clamp(8px,2vh,12px) clamp(12px,3.5vw,18px) clamp(18px,4.5vh,28px);
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.abtn {
+  flex: 1;
+  max-width: 160px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--cream2);
+  border-radius: 9px;
+  padding: clamp(9px,2.2vh,12px) 6px;
+  font-size: clamp(10.5px, 2.8vw, 13px);
+  letter-spacing: .02em;
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+  transition: color .15s, border-color .15s, transform .1s;
+}
+.abtn:hover { color: var(--cream); border-color: rgba(237,230,218,.28); }
+.abtn:active { transform: scale(.96); }
+
+/* Primary action (Hint) in amber */
+.abtn.pri { color: var(--amber); border-color: var(--amber2); }
+.abtn.pri:hover { background: var(--amber-glow); }
+
+/* ── Overlay base ─────────────────────────────────────────────── */
+
+/*
+ * Overlays sit above all screens (z-index 20).
+ * backdrop-filter gives the frosted glass dimming effect on
+ * browsers that support it; the rgba fallback handles the rest.
+ */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,10,14,.82);
+  display: none;
+  z-index: 20;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.overlay.on { display: flex; align-items: flex-end; justify-content: center; }
+
+/* ── Win popup ────────────────────────────────────────────────── */
+
+/*
+ * The win card slides up from the bottom of the screen.
+ * Animation re-triggers on each solve by toggling style.animation
+ * via a forced reflow in script.js.
+ */
+.win-card {
+  background: var(--panel-hi);
+  border: 1px solid var(--rule);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: clamp(22px,4.5vh,32px) clamp(20px,5vw,30px) clamp(28px,6vh,40px);
+  width: 100%;
+  max-width: 520px;
+  animation: slideUp .38s cubic-bezier(.22,.9,.36,1) both;
+}
+@keyframes slideUp {
+  from { transform: translateY(110%); }
+  to   { transform: translateY(0);    }
+}
+
+/* Star rating — 1, 2, or 3 stars coloured amber for a solve */
+.win-stars {
+  text-align: center;
+  font-size: clamp(36px, 9vw, 52px);
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+  animation: starPop .4s .15s cubic-bezier(.22,.9,.36,1) both;
+}
+@keyframes starPop {
+  from { transform: scale(.5); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.win-stars .star { display: inline-block; transition: transform .15s; }
+.win-stars .star.lit { color: var(--amber); text-shadow: 0 0 16px rgba(224,146,47,.6); }
+.win-stars .star.dim { color: rgba(237,230,218,.15); }
+
+.win-heading {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(24px, 6.5vw, 32px);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.win-sub {
+  text-align: center;
+  font-size: clamp(12px, 3vw, 14px);
+  color: var(--cream2);
+  margin-bottom: clamp(18px,4vh,26px);
+}
+
+/* Moves / Par / Best — three stat columns with a rule above and below */
+.win-stats {
+  display: flex;
+  justify-content: center;
+  gap: clamp(20px, 6vw, 40px);
+  margin-bottom: clamp(20px,4.5vh,30px);
+  padding: clamp(12px,2.5vh,18px) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.wstat { text-align: center; }
+.wstat .wv {
+  font-family: var(--serif);
+  font-size: clamp(26px, 6.5vw, 34px);
+  color: var(--cream);
+  display: block;
+}
+.wstat .wl {
+  font-size: clamp(9px, 2vw, 11px);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+.wstat.hi .wv { color: var(--amber); }
+
+/* Replay / Next Level icon buttons at the bottom of the win card */
+.win-icon-row { display: flex; gap: clamp(14px,4vw,20px); justify-content: center; }
+
+.wibtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: clamp(14px,3.5vh,20px) clamp(20px,6vw,32px);
+  transition: border-color .15s, background .15s, transform .1s;
+  flex: 1;
+  max-width: 140px;
+}
+.wibtn:active { transform: scale(.95); }
+.wibtn:hover  { border-color: rgba(237,230,218,.3); background: var(--panel-hi); }
+
+/* Next Level button uses amber accent to draw the eye */
+.wibtn.next-btn { border-color: var(--amber2); background: var(--amber-glow); }
+.wibtn.next-btn:hover { background: rgba(224,146,47,.22); }
+
+.wibtn svg { width: clamp(24px, 6vw, 32px); height: clamp(24px, 6vw, 32px); }
+.wibtn .wibtn-label { font-size: clamp(11px, 2.8vw, 13px); letter-spacing: .05em; color: var(--cream2); }
+.wibtn.next-btn .wibtn-label { color: var(--amber); }
+
+/* ── Settings overlay ─────────────────────────────────────────── */
+
+/* Settings uses a centred card rather than a bottom sheet */
+#ov-set { align-items: center !important; justify-content: center !important; padding: 24px; }
+
+.scard {
+  background: var(--panel-hi);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: clamp(20px,5vw,28px);
+  width: 100%;
+  max-width: 340px;
+}
+.stitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(18px, 4.5vw, 22px);
+  margin-bottom: 2px;
+}
+.srule { height: 1px; background: var(--rule); margin: 12px 0; }
+
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.slabel { font-size: clamp(13px, 3.2vw, 14px); }
+.ssub   { font-size: clamp(9.5px, 2.3vw, 11px); color: var(--muted); margin-top: 2px; }
+
+/* Toggle switch for Sound on/off */
+.sw {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sw .k {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left .15s, background .15s;
+}
+.sw.on              { border-color: var(--amber2); }
+.sw.on .k           { left: 21px; background: var(--amber); }
+
+/* Reset progress — styled as a bordered text button, not a CTA */
+.sreset {
+  width: 100%;
+  background: none;
+  border: 1px solid rgba(237,230,218,.15);
+  color: var(--muted);
+  font-size: clamp(11px, 2.8vw, 12.5px);
+  padding: 11px 14px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+.sreset:hover { color: var(--cream2); border-color: rgba(237,230,218,.28); }
+
+.sclose {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid var(--amber2);
+  background: transparent;
+  color: var(--amber);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ── Utility ──────────────────────────────────────────────────── */
+.hidden { display: none !important; }
